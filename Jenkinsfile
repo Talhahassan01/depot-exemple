@@ -5,39 +5,36 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Talhahassan01/depot-exemple.git'
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Compile') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'echo "Running on Unix"'
-                        sh 'javac HelloWorld.java'
-                        sh 'java HelloWorld'
-                        sh 'python3 hello.py'
-                    } else {
-                        bat 'echo "Running on Windows"'
-                        bat 'javac HelloWorld.java'
-                        bat 'java HelloWorld'
-                        bat 'python hello.py'
-                    }
-                }
+                sh 'mvn compile'
             }
         }
 
-        stage('Docker Build') {
+        stage('Test') {
             steps {
-                sh 'docker build -t mon-app .'
+                sh 'mvn test'
             }
         }
 
-        stage('Run Container') {
+        stage('Package') {
             steps {
-                sh 'docker rm -f mon-container || true'
-                sh 'docker run -d --name mon-container mon-app'
+                sh 'mvn package'
             }
+        }
+    }
+
+    post {
+        always {
+            junit '**/target/surefire-reports/*.xml'
+        }
+
+        success {
+            archiveArtifacts artifacts: 'target/*.jar'
         }
     }
 }
